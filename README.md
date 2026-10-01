@@ -58,24 +58,24 @@ Thrifting takes work. Someone has to search listings across apps, picture how a 
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Filters listings by max price and size, scores the rest by keyword overlap with the description, and returns the best matches.
+- **Inputs:** `description` (str) — keywords describing what the user wants. `size` (str | None) — size to filter by, case-insensitive token match (e.g. "M" matches "S/M"); `None` skips the filter. `max_price` (float | None) — inclusive price ceiling; `None` skips the filter.
+- **Returns:** A list of listing dicts (fields: `id`, `title`, `description`, `category`, `style_tags` (list), `size`, `condition`, `price` (float), `colors` (list), `brand` (str or None), `platform`), sorted best match first, capped at `config.SEARCH_RESULT_LIMIT`.
+- **When it has nothing:** Returns an empty list — never `None`, never raises.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Asks the model for outfit suggestions pairing a thrifted item with the user's existing wardrobe.
+- **Inputs:** `new_item` (dict) — a listing dict for the item being considered. `wardrobe` (dict) — has an `items` key holding a list of the user's clothing items; may be empty.
+- **Returns:** A non-empty string with one or two outfit suggestions.
+- **When it has nothing:** If `wardrobe['items']` is empty, returns general styling advice for the item (still a non-empty string) instead of raising or returning `""`.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Writes a short, social-media-style caption for the thrifted find, mentioning the item, its price and platform, and the suggested outfit.
+- **Inputs:** `outfit` (str) — the outfit suggestion string from `suggest_outfit()`. `new_item` (dict) — the listing dict for the item.
+- **Returns:** A two-to-four sentence caption string.
+- **When it has nothing:** If `outfit` is empty or whitespace-only, returns a descriptive message string instead of raising.
 
 ---
 
