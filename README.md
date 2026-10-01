@@ -39,8 +39,7 @@
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
-
+Thrifting takes work. Someone has to search listings across apps, picture how a thing would go with what's already in the closet, and guess whether the price is fair. FitFindr handles that part. A user describes what they want in plain language, something like "vintage graphic tee under $30" or "90s track jacket in size M." The agent searches secondhand listings for the closest match on description, size, and price, figures out what it pairs with in the user's wardrobe, and writes a short caption for the post. If nothing in the listings matches, it says so instead of forcing a result.
 
 
 ---
