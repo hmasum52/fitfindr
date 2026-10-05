@@ -89,10 +89,9 @@ Thrifting takes work. Someone has to search listings across apps, picture how a 
         and stop. Otherwise take the first result and go to suggest_outfit."
         — agent.py::run_agent
 
-     The grader checks your code against what you claim here, so the file and
-     function have to be real. -->
+     The grader checks your code against what you claim here, so the file and function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message in `session["error"]` saying what the user could change (broaden the description, drop the size, raise the max price) and return — do not call `suggest_outfit`. Otherwise take the first result and proceed to `suggest_outfit` and `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
