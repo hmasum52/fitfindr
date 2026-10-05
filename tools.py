@@ -220,5 +220,20 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    if not outfit or not outfit.strip():
+        return "No outfit suggestion yet — run suggest_outfit() first to get styling ideas for this item."
+
+    prompt = (
+        f"Write a short social media caption (2-4 sentences) for a thrift find.\n\n"
+        f"Item: {new_item['title']} — {new_item['description']}\n"
+        f"Price: ${new_item['price']:.2f} on {new_item['platform']}\n"
+        f"Outfit idea: {outfit}\n\n"
+        "Write it like a real post, not a product listing — capture the vibe "
+        "of the piece and the outfit. Mention the item, the price, and the "
+        "platform once each."
+    )
+
+    return generate(
+        prompt,
+        system="You write casual, specific social media captions for thrifted fashion finds.",
+    )
