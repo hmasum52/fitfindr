@@ -153,8 +153,35 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    item_desc = (
+        f"{new_item['title']} — {new_item['description']} "
+        f"(category: {new_item['category']}, colors: {', '.join(new_item['colors'])})"
+    )
+
+    items = wardrobe.get("items") or []
+    if not items:
+        prompt = (
+            f"A thrifter is considering buying this item:\n{item_desc}\n\n"
+            "They don't have any wardrobe items on file yet. Give general "
+            "outfit and styling ideas for this piece — what colors, textures, "
+            "and types of pieces would pair well with it."
+        )
+    else:
+        wardrobe_lines = "\n".join(
+            f"- {wi['name']} (category: {wi['category']}, style: {', '.join(wi['style_tags'])})"
+            for wi in items
+        )
+        prompt = (
+            f"A thrifter is considering buying this item:\n{item_desc}\n\n"
+            f"Here is their existing wardrobe:\n{wardrobe_lines}\n\n"
+            "Suggest one or two specific outfits that pair the new item with "
+            "pieces they already own, naming those pieces by name."
+        )
+
+    return generate(
+        prompt,
+        system="You are a concise, practical personal stylist giving outfit advice.",
+    )
 
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
