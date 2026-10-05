@@ -95,9 +95,9 @@ Thrifting takes work. Someone has to search listings across apps, picture how a 
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex (`agent.py::parse_query`). One pattern pulls a `$` price (optionally preceded by "under"/"below"/"less than"/"max"/"up to") and strips it from the text; another pulls a `size <word>` or trailing `, <word>` token and strips that too; whatever text is left, whitespace-normalized, becomes `description`. Chosen over a model call because it costs nothing, returns the same answer on the same input every time (which the session-visibility check above depends on), and a wrong parse is readable in the pattern instead of being a model's opinion to debug.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** `query` (the raw input) → `parsed` (from `parse_query`) → `search_results` (from `search_listings(**parsed)`) → `selected_item` (`search_results[0]`, only reached if `search_results` is non-empty) → `outfit_suggestion` (from `suggest_outfit(selected_item, wardrobe)`) → `fit_card` (from `create_fit_card(outfit_suggestion, selected_item)`). Each tool call reads its inputs back out of `session` rather than from a variable held over from the previous step, and writes its result into `session` before the next call runs — that's what makes `error` checkable as a stop condition and lets a no-match run be verified by inspecting `session["fit_card"] is None` without re-running anything.
 
 ---
 
