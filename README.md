@@ -111,8 +111,30 @@ Thrifting takes work. Someone has to search listings across apps, picture how a 
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ AI201_CACHE=0 python app.py ask 'vintage graphic tee under $30'
 
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   **Outfit 1: Y2K Streetwear**
+*   **Top:** Y2K Butterfly Baby Tee
+*   **Bottoms:** Baggy straight-leg jeans (dark wash)
+*   **Outerwear:** Black cropped zip hoodie (worn open)
+*   **Shoes:** Chunky white sneakers
+*   **Accessories:** Black crossbody bag
+
+*Why it works:* The fitted baby tee balances the volume of the baggy jeans, while the cropped hoodie and chunky sneakers lean fully into the Y2K streetwear aesthetic.
+
+**Outfit 2: High-Low Contrast**
+*   **Top:** Y2K Butterfly Baby Tee
+*   **Bottoms:** Wide-leg khaki trousers
+*   **Accessories:** Brown leather belt + Black crossbody bag
+*   **Shoes:** Chunky white sneakers (or black combat boots for an edgy twist)
+
+*Why it works:* Pairing the playful, feminine butterfly tee with structured, minimalist earth-tone trousers creates a cool, balanced high-low mix. Cinch with the brown belt to pull it together.
+
+  Fit card: Living out my ultimate 2000s pop star dreams in this butterfly baby tee. 🦋✨ Style her with baggy dark denim and a zip-up hoodie for off-duty Y2K streetwear, or dress it down with wide-leg trousers for that effortless high-low mix. Grab this little aesthetic dream for just $18 over on my Depop!
+
+2 model calls this session, 648 prompt + 295 output tokens
 ```
 
 **The three tools, tested one at a time**
@@ -148,15 +170,15 @@ $ python -c "from tools import create_fit_card; from utils.data_loader import lo
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Implement `run_agent()` in `agent.py` following the branch rule I'd already written in the README, reusing the existing `parse_query()`.
+- *What came back:* A working implementation — but the call into `suggest_outfit()` was `suggest_outfit(session["selected_item"], wardrobe)`, reading `selected_item` out of the session while still passing the plain `wardrobe` function argument straight through instead of `session["wardrobe"]`.
+- *What I changed:* Told it every tool call has to read its inputs back out of the session, not from a variable carried over from the caller. It changed the line to `suggest_outfit(session["selected_item"], session["wardrobe"])`, which is what actually makes the session the single source of truth instead of a side log of values that are really flowing through local variables.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Run the happy path, print the session, and check that the item in `session["selected_item"]` is the exact same item that reached `suggest_outfit()`.
+- *What came back:* It monkeypatched `suggest_outfit` with a spy to capture the argument it was actually called with, ran `run_agent()`, and compared the captured object to `session["selected_item"]` with `is`.
+- *What I changed:* Nothing — the check came back `True`, confirming the session-threading fix from Moment 1 actually holds at runtime and isn't just correct-looking code. I kept the verification method (the `is` check via a spy) rather than just eyeballing printed output, since `==` on two separately-constructed dicts with the same fields would have passed even if the loop had copied or refetched the item somewhere.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
