@@ -152,8 +152,19 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    session["parsed"] = parse_query(query)
+    session["search_results"] = search_listings(**session["parsed"])
+
+    if not session["search_results"]:
+        session["error"] = (
+            "No listings matched — try broadening the description, dropping "
+            "the size filter, or raising the max price."
+        )
+        return session
+
+    session["selected_item"] = session["search_results"][0]
+    session["outfit_suggestion"] = suggest_outfit(session["selected_item"], session["wardrobe"])
+    session["fit_card"] = create_fit_card(session["outfit_suggestion"], session["selected_item"])
     return session
 
 
