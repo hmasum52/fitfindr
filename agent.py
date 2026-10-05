@@ -15,6 +15,7 @@ Build and test your three tools in `tools.py` first. Then come here.
 
 import config
 import trace
+import re
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
 
@@ -46,6 +47,50 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "error": None,               # set when the run ended early
     }
 
+
+# ── parsing the query ─────────────────────────────────────────────────────────
+
+# Sizes a user is likely to type. Matched as whole words so that the "M" in
+# "Medium Wash" or the "L" in "L/XL" can't be mistaken for a request.
+_SIZE_WORDS = r"XXS|XS|S|M|L|XL|XXL"
+
+_PRICE_RE = re.compile(r"(?:under|below|less than|max|up to)?\s*\$\s*(\d+(?:\.\d+)?)", re.I)
+_SIZE_RE = re.compile(rf"\bsize\s+({_SIZE_WORDS}|US\s*\d+(?:\.\d+)?|W\d+)\b", re.I)
+_BARE_SIZE_RE = re.compile(rf",\s*({_SIZE_WORDS})\s*$", re.I)
+
+
+def parse_query(query: str) -> dict:
+    """
+    Pull a description, a size and a price ceiling out of what the user typed.
+
+    Regex rather than a model call, for three reasons worth writing down: it
+    costs nothing, it returns the same answer twice (which the unit 4 state
+    criterion depends on), and when it gets something wrong the reason is
+    readable in the pattern instead of being a model's opinion.
+
+    What it gives up is phrasing it has never seen. "nothing over thirty
+    dollars" parses to no price at all, and the run then quietly ignores the
+    ceiling. That limitation is in the README rather than hidden here.
+
+    Returns a dict with keys `description` (str), `size` (str or None) and
+    `max_price` (float or None).
+    """
+    text = query or ""
+
+    max_price = None
+    price_match = _PRICE_RE.search(text)
+    if price_match:
+        max_price = float(price_match.group(1))
+        text = text[: price_match.start()] + " " + text[price_match.end() :]
+
+    size = None
+    size_match = _SIZE_RE.search(text) or _BARE_SIZE_RE.search(text)
+    if size_match:
+        size = re.sub(r"\s+", " ", size_match.group(1)).strip().upper()
+        text = text[: size_match.start()] + " " + text[size_match.end() :]
+
+    description = re.sub(r"[,\s]+", " ", text).strip(" ,")
+    return {"description": description, "size": size, "max_price": max_price}
 
 # ── planning loop ─────────────────────────────────────────────────────────────
 
