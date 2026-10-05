@@ -118,18 +118,21 @@ $ python app.py ask '...'
 **The three tools, tested one at a time**
 
 ```
-$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+$ python -c "from tools import search_listings; print([l['id'] for l in search_listings('graphic tee', max_price=30)])"
 
+['lst_002', 'lst_006', 'lst_017', 'lst_033', 'lst_011', 'lst_015']
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(repr(suggest_outfit(load_listings()[0], get_example_wardrobe())))"
 
+'**Buy them.** Vintage 501s are a timeless staple that will anchor your wardrobe. \n\nHere are two ways to style them using what you already own:\n\n**Outfit 1: Casual & Minimal**\n*   **Top:** White ribbed tank top (tucked in)\n*   **Belt:** Brown leather belt\n*   **Shoes:** Chunky white sneakers\n*   **Accessories:** Black crossbody bag\n*   *Why it works:* The fitted tank balances the straight-leg fit of the 501s for an effortless, classic off-duty look. \n\n**Outfit 2: Edgy & Cozy**\n*   **Top:** Black cropped zip hoodie\n*   **Outerwear:** Vintage black denim jacket (layered over the hoodie)\n*   **Shoes:** Black combat boots\n*   *Why it works:* Double denim feels intentional when mixing washes (indigo jeans with the black jacket), and the cropped hoodie adds a modern streetwear proportion.'
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(repr(create_fit_card('jeans and white sneakers', load_listings()[0])))"
 
+"You seriously can’t beat the fit of broken-in vintage denim. These classic Levi's 501s have the prettiest knee fading that just screams effortless. Throw them on with some crisp white sneakers and you're good to go. Grab them on my Depop right now for just $38!"
 ```
 
 ---
