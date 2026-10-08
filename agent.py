@@ -56,6 +56,7 @@ def new_session(query: str, wardrobe: dict) -> dict:
 _SIZE_WORDS = r"XXS|XS|S|M|L|XL|XXL"
 
 _PRICE_RE = re.compile(r"(?:under|below|less than|max|up to)?\s*\$\s*(\d+(?:\.\d+)?)", re.I)
+_OVER_PRICE_RE = re.compile(r"(?:over|above|more than)\s*\$\s*(\d+(?:\.\d+)?)", re.I)
 _SIZE_RE = re.compile(rf"\bsize\s+({_SIZE_WORDS}|US\s*\d+(?:\.\d+)?|W\d+)\b", re.I)
 _BARE_SIZE_RE = re.compile(rf",\s*({_SIZE_WORDS})\s*$", re.I)
 
@@ -73,16 +74,24 @@ def parse_query(query: str) -> dict:
     dollars" parses to no price at all, and the run then quietly ignores the
     ceiling. That limitation is in the README rather than hidden here.
 
+    "over/above/more than $N" is recognized but deliberately not turned into
+    a max_price — it means the opposite of a ceiling, and search_listings has
+    no floor to give it to, so it's dropped rather than silently inverted.
+
     Returns a dict with keys `description` (str), `size` (str or None) and
     `max_price` (float or None).
     """
     text = query or ""
 
     max_price = None
-    price_match = _PRICE_RE.search(text)
-    if price_match:
-        max_price = float(price_match.group(1))
-        text = text[: price_match.start()] + " " + text[price_match.end() :]
+    over_match = _OVER_PRICE_RE.search(text)
+    if over_match:
+        text = text[: over_match.start()] + " " + text[over_match.end() :]
+    else:
+        price_match = _PRICE_RE.search(text)
+        if price_match:
+            max_price = float(price_match.group(1))
+            text = text[: price_match.start()] + " " + text[price_match.end() :]
 
     size = None
     size_match = _SIZE_RE.search(text) or _BARE_SIZE_RE.search(text)
@@ -165,8 +174,12 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         return session
 
     session["selected_item"] = session["search_results"][0]
-    session["outfit_suggestion"] = suggest_outfit(session["selected_item"], session["wardrobe"])
-    session["fit_card"] = create_fit_card(session["outfit_suggestion"], session["selected_item"])
+    try:
+        session["outfit_suggestion"] = suggest_outfit(session["selected_item"], session["wardrobe"])
+        session["fit_card"] = create_fit_card(session["outfit_suggestion"], session["selected_item"])
+    except ModelUnavailable as exc:
+        session["error"] = str(exc)
+        return session
     return session
 
 
