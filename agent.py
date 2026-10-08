@@ -165,6 +165,12 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     session["parsed"] = parse_query(query)
     # session["search_results"] = search_listings(**session["parsed"])
     session["search_results"] = call_tool("search_listings", session["parsed"])
+    trace.step(
+        "search_listings (via MCP)",
+        inputs=session["parsed"],
+        returned=session["search_results"],
+        note="branch: empty, stopping" if not session["search_results"] else "",
+    )
 
     if not session["search_results"]:
         session["error"] = (
@@ -176,8 +182,19 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     session["selected_item"] = session["search_results"][0]
     try:
         session["outfit_suggestion"] = suggest_outfit(session["selected_item"], session["wardrobe"])
+        trace.step(
+            "suggest_outfit",
+            inputs={"new_item": session["selected_item"], "wardrobe": session["wardrobe"]},
+            returned=session["outfit_suggestion"],
+        )
         session["fit_card"] = create_fit_card(session["outfit_suggestion"], session["selected_item"])
+        trace.step(
+            "create_fit_card",
+            inputs={"outfit": session["outfit_suggestion"], "new_item": session["selected_item"]},
+            returned=session["fit_card"],
+        )
     except ModelUnavailable as exc:
+        trace.step("suggest_outfit/create_fit_card", note=f"ModelUnavailable: {exc}")
         session["error"] = str(exc)
         return session
     return session
