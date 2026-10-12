@@ -383,6 +383,16 @@ Not run. There was no change to measure, so the before table stands as the resul
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
 
+**No criterion is still missed.** All five were MET in the before run, so there is nothing left from the criteria themselves. What follows are problems I found by trying queries outside the five. Each one is something I ran, not a guess. None is one of the five criteria, so none is scored.
+
+- **Synonyms return nothing (tool: `tools.py::search_listings`).** "coat", "sweater under $40" and "trainers" each returned 0 listings, so the agent stops with "No listings matched". "t-shirt under $30" returned a flannel shirt and a polo, not tees. The cause is literal keyword overlap: the query word has to appear in a listing's title, description or tags. *What I'd do:* expand a small synonym map (coat→jacket, sweater→knit, trainers→sneakers, t-shirt→tee) before scoring. *Why I stopped:* no criterion misses, so I had no failing number to measure a fix against.
+- **"over $N" is dropped instead of applied (loop: `agent.py::parse_query`).** "jacket over $50" returns jackets at $33, $42 and $45. The earlier fix stopped "over $20" being read as a ceiling, which `test_failure_modes.py` checks, but `search_listings` has no minimum price, so the number is thrown away. The agent gives the opposite of what the user asked for without saying so. *What I'd do:* add a `min_price` argument and pass it through, or at least say in the result that the floor was ignored. *Why I stopped:* it changes the tool's signature and the MCP schema, which is more than a one-line fix.
+- **Other price phrasing is ignored (`agent.py::parse_query`).** "tee under thirty dollars" parses to no price at all, so the ceiling is silently skipped. The parse docstring already notes this limit. *What I'd do:* parse number words, or ask the user to use a `$` amount. *Why I stopped:* regex-only parsing was a deliberate choice, and the cost of a model call isn't worth it for this case.
+- **Size filter can drop the right item (tool: `search_listings`).** "jeans size M" returned 0 listings, because the jeans in the data are sized like "W30 L30". *What I'd do:* map waist sizes to S/M/L, or tell the user the size filter removed everything. *Why I stopped:* it's a data question I haven't decided, so I left it.
+- **Fit cards repeat their openings (model output: `tools.py::create_fit_card`).** All 85 cards are distinct, which is what criterion 4 checks, but several share a first sentence, for example four pairs opening with "Nothing beats…". *What I'd do:* vary the prompt's example tone or ask for a different opening per call. *Why I stopped:* the criterion only requires cards that aren't word-for-word identical, and they pass.
+- **The run log can't show ids or prices.** The trace prints titles and "dict with keys", so criteria 3 and 5 had to be scored with a separate spy script that isn't part of `run_eval.py`. *What I'd do:* print `id` and `price` in `trace.py`, or add the spy checks to `run_eval.py`. *Why I stopped:* the results were verified, just not from the log itself.
+
+I did not run `run_eval.py --label after`, because I changed no code (see The Improvement).
 
 
 <!-- ═════════════════════════════════════════════════════════════════════
