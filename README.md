@@ -262,19 +262,41 @@ that produced it:
 **Happy path**
 
 ```
+$ python app.py ask "looking for a vintage graphic tee under $30" --trace
 
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: **Outfit 1: Y2K Streetwear** *   **Top:** Y2K Butterfly Baby Tee *   **Bottoms:** Baggy straight-leg jeans (da…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Channeling major early 2000s energy with this butterfly print baby tee 🦋 Pair it with baggy dark denim and chu…
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
 ```
 
 **Empty search**
 
 ```
+$ python app.py ask "designer ballgown size XXS under \$5" --trace
 
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+      →    branch: empty, stopping
+
+  No listings matched — try broadening the description, dropping the size filter, or raising the max price.
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+**On the MCP move:** `search_listings` was already rewired to call
+`call_tool("search_listings", session["parsed"])` against the MCP server
+before this unit, so no behavior changed here. What's new is that the call is
+now *visible* as step `[1] search_listings (via MCP)` in the trace — the label
+makes it obvious the result came back over MCP rather than from a local
+function, and the step's `out:` line shows the unwrapped list of listing dicts
+came back in native Python shape, same as a direct call would have returned.
 
 
 
