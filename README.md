@@ -180,6 +180,20 @@ $ python -c "from tools import create_fit_card; from utils.data_loader import lo
 - *What came back:* It monkeypatched `suggest_outfit` with a spy to capture the argument it was actually called with, ran `run_agent()`, and compared the captured object to `session["selected_item"]` with `is`.
 - *What I changed:* Nothing — the check came back `True`, confirming the session-threading fix from Moment 1 actually holds at runtime and isn't just correct-looking code. I kept the verification method (the `is` check via a spy) rather than just eyeballing printed output, since `==` on two separately-constructed dicts with the same fields would have passed even if the loop had copied or refetched the item somewhere.
 
+### Unit 4
+
+**Moment 3 — scenarios for the criteria**
+
+- *What I asked for:* Work out what each of my five criteria needs run, and put those scenarios in `scenarios.py`.
+- *What came back:* A plan with 5 queries for criterion 3, 5 distinct items for criterion 4 and 10 price-ceiling queries for criterion 5. It had worked out the top listing for each query by hand from `data/listings.json` and the scoring in `tools.py::search_listings`. It also warned that criterion 5 as written meant about 100 extra model calls, since `run_eval.py` runs the full agent five times per scenario.
+- *What I changed:* I chose fewer queries for criterion 5 and asked for it to become "5 of 5". Claude added that as a "Revised in unit 4" note under the original line in `criteria.md` and left the original text alone. It also warned that a cost reason may not count as a valid revision, so I recorded that reason openly in the note. Before I trusted the hand-computed picks, it ran every query through `parse_query` and `search_listings` with no model calls. Each returned results, the five criterion 4 queries gave five different top items, and no returned price was over its ceiling.
+
+**Moment 4 — checking whether "all met" was real**
+
+- *What I asked for:* After my first run scored every criterion as met, I asked Claude to re-verify, since Milestone 5 expects some unmet criteria to fix.
+- *What came back:* A stricter re-check of all 85 completed runs: the price had to match exactly (so "$22" can't match inside "$220"), no fit card could be the fallback text, and the stopped runs could have no `suggest_outfit` step in their trace. Everything still passed. Claude would not invent a miss, and instead ran queries outside my five, which found real gaps (synonyms like "coat" return nothing, and "jacket over $50" ignores the floor). I also pointed it at `test_failure_modes.py`, hoping it held a miss. All 4 tests passed, so it did not.
+- *What I changed:* I kept every verdict as MET and did not reword a criterion to force a failure. The gaps went into What's Still Broken with the commands that showed them. Two of my checks, criteria 3 and 5, turned out not to be readable from the run log, because the trace prints only titles and "dict with keys", so I scored them with a spy script and said so in the README.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
