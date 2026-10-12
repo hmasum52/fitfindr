@@ -200,17 +200,54 @@ $ python -c "from tools import create_fit_card; from utils.data_loader import lo
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. A matching query completes all three tools | ≥ 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. The item selected is the item passed downstream | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. The fit card is grounded in the actual item | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. The price ceiling is never violated | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Real output from one try**, pasted as text, naming the file and function
-that produced it:
+Raw log: `results/run_2026-10-12_0107_before.md` (caching off, `TEMPERATURE = 0.9`, 170 model calls).
+
+How the tries map: criterion 1 and 2 are one query run 5 times. For criteria 3, 4 and 5, Try *n* is the *n*-th of five different queries or items (see `scenarios.py`). Each of those queries was also run 5 times in the harness and all 25 runs per criterion passed too.
+
+- **1:** all 5 tries ended with `error: None` and a fit card.
+- **2:** all 5 tries ended with the "No listings matched — try broadening…" message, 0 search results, and no outfit or fit card.
+- **3:** the run log's trace prints only `dict with keys: new_item, wardrobe`, not the id. I checked it separately by replacing `suggest_outfit` with a spy that captures `new_item`, then comparing its `id` to `session["selected_item"]["id"]`. That matched in 25 of 25 runs (5 queries × 5 tries). This spy check is not in the run log.
+- **4:** every fit card contained its item's price, in 25 of 25 runs. All 85 fit cards in the log are distinct, so no two were word-for-word identical.
+- **5:** the trace shows only the first three titles, so I checked prices with the same spy approach. Every listing in `session["search_results"]` was ≤ the ceiling, in 25 of 25 runs. The "$38" query includes two listings priced exactly $38.
+
+**Real output from one try** (criterion 1, try 1), from `run_eval.py::run_once`, which calls `agent.py::run_agent`. The trace is printed by `trace.py`:
 
 ```
+Query: vintage graphic tee under $30   (example wardrobe)
 
+- stopped early: no
+- selected_item: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+- search_results: 10
+
+Outfit suggestion:
+
+**Outfit 1: Y2K Streetwear**
+Pair the butterfly baby tee with your **baggy straight-leg jeans (dark wash)** and **chunky white sneakers**. Layer the **black cropped zip hoodie** over top (leave it unzipped to show off the graphic) and finish with your **black crossbody bag**. 
+
+**Outfit 2: Casual Contrast**
+Tuck the baby tee into your **wide-leg khaki trousers**, worn with the **brown leather belt**. Throw on your **vintage black denim jacket** and ground the look with your **chunky white sneakers** for an easy, balanced mix of Y2K and earth tones.
+
+Fit card:
+
+Channeling my inner 2000s pop princess in this dreamy little butterfly baby tee. 🦋✨ Grabbed this Y2K gem for just $18 over on my Depop before someone else snatched it up. Honestly obsessed with how it looks thrown on with baggy dark wash denim and a zip hoodie, or dressed down just a bit with some effortless khaki trousers.
+
+Trace:
+
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: **Outfit 1: Y2K Streetwear** Pair the butterfly baby tee with your **baggy straight-leg jeans (dark wash)** an…
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Channeling my inner 2000s pop princess in this dreamy little butterfly baby tee. 🦋✨ Grabbed this Y2K gem for j…
 ```
 
 ---
