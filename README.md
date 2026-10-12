@@ -272,14 +272,24 @@ Trace:
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | A matching query completes all three tools | ≥ 4 of 5 | MET | 5 of 5 tries ended with `error: None` and a fit card. None of the fit cards was the "No outfit suggestion yet" fallback text. |
+| 2 | An impossible query stops before the second tool | 5 of 5 | MET | 5 of 5 tries returned the "No listings matched…" message. The trace of each has only the `search_listings` step, so `suggest_outfit` and `create_fit_card` never ran. |
+| 3 | The item selected is the item passed downstream | 5 of 5 | MET | A spy on `suggest_outfit` captured `new_item`, and its `id` equalled `session["selected_item"]["id"]` in 25 of 25 runs (5 queries × 5 tries). |
+| 4 | The fit card is grounded in the actual item | 5 of 5 | MET | All 25 cards contained their item's exact price, checked by regex so "$22" can't match inside "$220". All 85 cards in the log were distinct, so none were word-for-word identical. |
+| 5 | The price ceiling is never violated | 5 of 5 (revised from 10 of 10) | MET | Every listing in `session["search_results"]` was ≤ the ceiling in 25 of 25 runs, including the "$38" query, which has two listings priced at exactly $38. |
+
+Criteria 3 and 5 were scored with a spy script rather than from the run log. The log's trace prints only titles and "dict with keys", not ids or prices.
 
 **Diagnoses**
 
+No criterion was missed, so there is no failure to place in a tool, the loop's branch, the session or the model's output, and I'm not inventing one.
+
+The results match what the criteria's own reasoning predicted:
+- **Criteria 2, 3 and 5** are plain code (an `if not search_results` check, passing a dict through two calls, and a `price <=` comparison). Nothing in them involves the model or a scoring judgment, so 5 of 5 was the right target and they held.
+- **Criterion 4** depends on the prompt asking for the price (`create_fit_card` puts `Price: $…` in the prompt and tells the model to mention it). The model followed that in all 25 runs. With caching off and `TEMPERATURE = 0.9` the cards varied; they were not hiding identical output.
+- **Criterion 1** allowed a miss on wording ("tee" vs "t-shirt"). The query I picked ("vintage graphic tee under $30") shares literal keywords with its listings, so the allowed miss never happened.
+
+Limits of this result: the five criteria only cover queries I chose to match the data's wording. Outside them there are known gaps. "coat", "sweater under $40" and "trainers" return 0 listings, because `search_listings` matches only literal keywords. "jacket over $50" returns jackets under $50, because the "over $N" fix drops the number and never applies it as a floor. Neither gap is one of the five criteria, and I haven't turned them into failures.
 
 
 ---
@@ -346,21 +356,19 @@ came back in native Python shape, same as a direct call would have returned.
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** Nothing. I made no improvement and did not run `python run_eval.py --label after`.
 
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** None. All five criteria were MET in the before run (see Run Log — Before and Verdicts and Diagnoses), so there is no missed criterion to diagnose or fix.
+
+I rejected the alternatives for these reasons:
+- Changing code just to have something to measure would move no number. The before table is already at its targets, so a second run could only repeat 5 of 5.
+- I did not tighten or reword a criterion until it failed. `criteria.md` allows a revision only when a criterion can't be measured, and none of these were unmeasurable. The one revision I made, criterion 5 from 10 queries to 5, was for run cost, and it is recorded under the original line.
 
 ### Run Log — After
 
-| Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-|---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+Not run. There was no change to measure, so the before table stands as the result.
 
-**Did it help, and how do I know:**
+**Did it help, and how do I know:** There was no change, so nothing to compare. The evidence that no improvement is needed is the before run: 5 of 5 on criteria 2, 3, 4 and 5 and 5 of 5 against a 4-of-5 target on criterion 1. This holds only for the five criteria as written. The gaps listed at the end of Verdicts and Diagnoses (synonym queries and "over $N") are real, but no criterion covers them.
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
