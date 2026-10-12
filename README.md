@@ -345,7 +345,52 @@ makes it obvious the result came back over MCP rather than from a local
 function, and the step's `out:` line shows the unwrapped list of listing dicts
 came back in native Python shape, same as a direct call would have returned.
 
+---
 
+## Failure Modes
+
+Three failure modes, each triggered on purpose and handled. The regression tests are in `test_failure_modes.py` (`python test_failure_modes.py`, 4 of 4 pass).
+
+**1. Empty search** — handled in `agent.py::run_agent`.
+Trigger: `designer ballgown size XXS under $5`. `search_listings` returns `[]`, the loop sets `session["error"]` to a message naming what to change and returns before `suggest_outfit`. The full trace is under Loop Trace above (one step, then the message). Test: `test_empty_search_stops_before_suggest_outfit`, which makes `suggest_outfit` raise if it is ever called.
+
+**2. Empty wardrobe** — handled in `tools.py::suggest_outfit`.
+Trigger: `run_eval.py` scenario "empty wardrobe", query `denim jacket under $50` with `wardrobe = {"items": []}`. `suggest_outfit` sees no items and asks the model for general styling advice instead of naming pieces the user owns. All 3 steps ran and all 5 tries completed (from `results/run_2026-10-12_0107_before.md`, try 1):
+
+```
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 7 items: Denim Jacket — Light Wash, Cropped, Vintage Levi's 501 Jeans — Medium Wash, 90s Track Jacket — Navy/White Stripe … +4 more
+[2] suggest_outfit
+      in:  dict with keys: new_item, wardrobe
+      out: This is a versatile, high-impact layering piece. Because of the cropped cut and structured shoulders, it adds …
+[3] create_fit_card
+      in:  dict with keys: outfit, new_item
+      out: Found my ultimate spring layering piece on Poshmark for $42.00! 🤌✨ This cropped light wash denim jacket has th…
+```
+
+The advice is general (color pairings, textures, silhouettes) with no wardrobe piece named, which is the intended behavior. Test: `test_empty_wardrobe_gets_advice_not_crash`.
+
+**3. Model unavailable** — handled in `agent.py::run_agent` (`except ModelUnavailable`).
+Trigger: a bad API key, so the first model call is rejected:
+
+```
+$ AI201_CACHE=0 GEMINI_API_KEY=not-a-real-key python app.py ask 'vintage graphic tee under $30' --trace
+
+[1] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+[2] suggest_outfit/create_fit_card
+      →    ModelUnavailable: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+
+  The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+
+1 model calls this session
+```
+
+The user gets a message instead of a stack trace, `session["error"]` is set and `fit_card` stays `None`. Test: `test_model_unavailable_is_handled_not_raised`.
+
+**A fourth case found along the way:** `vintage graphic tee over $20` used to be read as a $20 ceiling, which is the opposite of what the user meant. `parse_query` now drops "over $N" instead (`test_price_over_is_not_read_as_a_ceiling`). The number is still not applied as a floor; that is listed under What's Still Broken.
 
 ---
 
