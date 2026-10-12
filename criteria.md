@@ -97,6 +97,14 @@ lets even one listing through over the ceiling, so 10/10 is the honest
 target, not an easy one — a miss here means the filter itself is broken, not
 that the data was ambiguous.
 
+> **Revised in unit 4:** For 5 queries that specify a max_price, every listing
+> in every returned result list has `price <= max_price` — 5 of 5 tries,
+> across all returned listings, not just the first.
+>
+> **Why revised:** Each query runs the full agent, including two model calls,
+> five times over, so 10 queries was about 100 extra model calls. The check
+> itself is unchanged: still every returned listing, still no exceptions.
+
 
 
 ---

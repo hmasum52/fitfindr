@@ -35,18 +35,30 @@ SCENARIOS = [
         "wardrobe": "empty",
         "criterion": None,
     },
-    # TODO: add what your criteria 3, 4 and 5 need.
-    #
-    # Set "criterion" to the number in criteria.md that the scenario tests.
-    # "criterion": None means a diagnostic run — useful to have, but it isn't
-    # one of your five, and run_eval.py marks it as such in the table.
-    #
-    # For a state criterion, any normal query works — what you're checking is
-    # what ends up in the session, not what the user typed.
-    #
-    # For a fit-card criterion, you probably want the SAME query listed more
-    # than once, or several different items, depending on what your criterion
-    # actually says.
+    # Criterion 3 — 5 different matching queries. Check selected_item["id"]
+    # against the new_item id in the suggest_outfit trace step.
+    {"name": "state: polo shirt", "query": "vintage polo shirt", "wardrobe": "example", "criterion": 3},
+    {"name": "state: cargo pants", "query": "cargo pants under $30", "wardrobe": "example", "criterion": 3},
+    {"name": "state: chelsea boots", "query": "suede chelsea boots", "wardrobe": "example", "criterion": 3},
+    {"name": "state: cardigan", "query": "chunky knit cardigan", "wardrobe": "example", "criterion": 3},
+    {"name": "state: linen blazer", "query": "linen blazer under $40", "wardrobe": "example", "criterion": 3},
+
+    # Criterion 4 — 5 different items (distinct top results). Check each fit
+    # card mentions its item's price and no two cards are identical.
+    {"name": "fit card: flannel", "query": "oversized flannel shirt", "wardrobe": "example", "criterion": 4},
+    {"name": "fit card: bomber", "query": "leather bomber jacket", "wardrobe": "example", "criterion": 4},
+    {"name": "fit card: denim jacket", "query": "light wash denim jacket", "wardrobe": "example", "criterion": 4},
+    {"name": "fit card: mary janes", "query": "platform mary janes", "wardrobe": "example", "criterion": 4},
+    {"name": "fit card: tie-dye", "query": "tie-dye long sleeve", "wardrobe": "example", "criterion": 4},
+
+    # Criterion 5 — every returned price must be <= the ceiling (read the
+    # search_listings step in the trace). The $38 one sits on listings priced
+    # exactly $38, so it checks the ceiling is inclusive.
+    {"name": "ceiling: tee $20", "query": "vintage tee under $20", "wardrobe": "example", "criterion": 5},
+    {"name": "ceiling: jacket $38", "query": "vintage jacket under $38", "wardrobe": "example", "criterion": 5},
+    {"name": "ceiling: denim $30", "query": "denim under $30", "wardrobe": "example", "criterion": 5},
+    {"name": "ceiling: streetwear $15", "query": "streetwear under $15", "wardrobe": "example", "criterion": 5},
+    {"name": "ceiling: black $25", "query": "black under $25", "wardrobe": "example", "criterion": 5},
 ]
 
 WARDROBES = ("example", "empty")
